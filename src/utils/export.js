@@ -23,7 +23,8 @@ export const exportMeetingsToExcel = (meetings) => {
         "Mã phòng": m.code,
         "Email": p.email,
         "Tên": p.name,
-        "Thời gian gia nhập": format(new Date(p.joinTime), 'dd/MM/yyyy HH:mm:ss')
+        "Thời gian gia nhập": p.joinTime ? format(new Date(p.joinTime), 'dd/MM/yyyy HH:mm:ss') : '',
+        "Thời gian kết thúc": p.leaveTime ? format(new Date(p.leaveTime), 'dd/MM/yyyy HH:mm:ss') : ''
       });
     });
   });
