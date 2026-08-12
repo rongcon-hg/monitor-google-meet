@@ -67,10 +67,17 @@ function App() {
             <Video color="white" />
           </div>
           <h1>Meet Tracker Pro</h1>
-          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '4px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
-            Đang diễn ra
-          </div>
+          {activeMeeting && activeMeeting.participants.every(p => p.status === 'left') ? (
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '4px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--danger)' }}></div>
+              Đã kết thúc
+            </div>
+          ) : (
+            <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '4px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
+              Đang diễn ra
+            </div>
+          )}
         </div>
         
         <div className="header-controls">

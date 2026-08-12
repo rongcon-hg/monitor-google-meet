@@ -113,7 +113,7 @@ export default async function handler(req, res) {
 
         // Đưa sự kiện vào danh sách nhật ký
         meetings[meetCode].events.push({
-          id: `${event.id.time}-${actorEmail}-${Math.random().toString(36).substr(2, 9)}`,
+          id: event.id.uniqueQualifier || `${event.id.time}-${actorEmail}-${event.events[0]?.name || 'unknown_event'}`,
           time: event.id.time,
           actorName: namePart,
           actorEmail: actorEmail,
@@ -122,6 +122,79 @@ export default async function handler(req, res) {
         });
       }
     });
+
+    // -------- LẤY LỊCH SỬ TỪ POSTGRES ĐỂ GỘP (TRÁNH MẤT GIỜ VÀO) --------
+    if (process.env.DATABASE_URL && Object.keys(meetings).length > 0) {
+      const client = new pg.Client({
+        connectionString: process.env.DATABASE_URL,
+      });
+      try {
+        await client.connect();
+        const meetCodes = Object.keys(meetings);
+        const query = `SELECT meeting_code, events FROM meetings_history WHERE meeting_code = ANY($1::text[])`;
+        const { rows } = await client.query(query, [meetCodes]);
+        
+        rows.forEach(row => {
+          const m = meetings[row.meeting_code];
+          if (m) {
+            const dbEvents = typeof row.events === 'string' ? JSON.parse(row.events) : row.events;
+            const eventMap = new Map();
+            
+            // Gộp events cũ từ DB
+            if (Array.isArray(dbEvents)) {
+              dbEvents.forEach(e => {
+                const dedupeKey = e.time + '_' + e.actorEmail + '_' + e.eventName;
+                eventMap.set(dedupeKey, e);
+              });
+            }
+            
+            // Gộp events mới từ API (sẽ ghi đè nếu trùng key)
+            m.events.forEach(e => {
+              const dedupeKey = e.time + '_' + e.actorEmail + '_' + e.eventName;
+              eventMap.set(dedupeKey, e);
+            });
+            
+            m.events = Array.from(eventMap.values());
+            
+            // Cập nhật lại danh sách participants từ toàn bộ events
+            m.events.forEach(e => {
+                let participant = m.participants.find(p => p.email === e.actorEmail);
+                if (!participant) {
+                  participant = {
+                    id: e.actorEmail,
+                    email: e.actorEmail,
+                    name: e.actorName,
+                    joinTime: e.time,
+                    leaveTime: null,
+                    status: 'active'
+                  };
+                  m.participants.push(participant);
+                }
+            });
+            
+            // Cập nhật lại thông số tổng
+            m.eventCount = m.events.length;
+            m.events.forEach(e => {
+                const eventTime = new Date(e.time).getTime();
+                if (!m._minTime || eventTime < m._minTime) {
+                    m._minTime = eventTime;
+                    m.startTime = e.time;
+                }
+                if (!m._maxTime || eventTime > m._maxTime) {
+                    m._maxTime = eventTime;
+                    m.endTime = e.time;
+                    m.lastActive = e.time;
+                }
+            });
+          }
+        });
+      } catch (dbErr) {
+        console.error("Lỗi khi đọc từ PostgreSQL:", dbErr);
+      } finally {
+        await client.end();
+      }
+    }
+    // -------------------------------------------------------------------
 
     const activeMeetings = Object.values(meetings).map(m => {
       delete m._minTime;
@@ -132,7 +205,7 @@ export default async function handler(req, res) {
         if (pEvents.length > 0) {
           p.joinTime = pEvents[0].time;
           const lastEvent = pEvents[pEvents.length - 1];
-          if (lastEvent.eventName === 'call_ended') {
+          if (lastEvent.eventName === 'call_ended' || lastEvent.eventName === 'endpoint_left') {
             p.leaveTime = lastEvent.time;
             p.status = 'left';
           } else {
