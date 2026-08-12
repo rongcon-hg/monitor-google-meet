@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { RefreshCw, Users, Server, Activity, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Users, Server, Activity, AlertTriangle, Download } from 'lucide-react';
 import { useWorkspaceMeetings } from './engine/api';
+import { exportMeetingsToExcel } from './utils/export';
 import { format } from 'date-fns';
 import './App.css';
 import './index.css';
@@ -10,6 +11,10 @@ function App() {
   const [selectedMeeting, setSelectedMeeting] = useState(null);
 
   const totalParticipants = meetings.reduce((acc, m) => acc + m.participants.length, 0);
+
+  const handleExport = () => {
+    exportMeetingsToExcel(meetings);
+  };
 
   return (
     <div className="app-container">
@@ -29,13 +34,16 @@ function App() {
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> 
             {isLoading ? 'Đang tải...' : 'Làm mới'}
           </button>
+          <button className="btn btn-secondary" onClick={handleExport} disabled={meetings.length === 0} title="Xuất báo cáo Excel">
+            <Download size={16} /> Xuất Excel
+          </button>
         </div>
       </header>
 
       {error && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', padding: '16px', borderRadius: '8px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
           <AlertTriangle size={20} />
-          <span><strong>Lỗi kết nối API:</strong> {error}. Hãy đảm bảo Backend (cổng 3001) đang chạy.</span>
+          <span><strong>Lỗi kết nối API:</strong> {error}. Hãy đảm bảo bạn đã điền Biến môi trường trên Vercel.</span>
         </div>
       )}
 
@@ -68,9 +76,10 @@ function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Mã phòng (Meeting Code)</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Số người tham gia</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Hoạt động cuối (Gần đúng)</th>
+                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Mã phòng</th>
+                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Số người</th>
+                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Bắt đầu</th>
+                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Kết thúc (Gần nhất)</th>
                   <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Thao tác</th>
                 </tr>
               </thead>
@@ -82,22 +91,25 @@ function App() {
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Users size={14} color="var(--text-secondary)" /> {m.participants.length} người
+                        <Users size={14} color="var(--text-secondary)" /> {m.participants.length}
                       </div>
                     </td>
                     <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                      {format(new Date(m.lastActive), 'dd/MM/yyyy HH:mm')}
+                      {m.startTime ? format(new Date(m.startTime), 'HH:mm - dd/MM') : 'N/A'}
+                    </td>
+                    <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
+                      {m.endTime ? format(new Date(m.endTime), 'HH:mm - dd/MM') : 'N/A'}
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => setSelectedMeeting(m)}>
-                        Xem chi tiết
+                        Chi tiết
                       </button>
                     </td>
                   </tr>
                 ))}
                 {meetings.length === 0 && !isLoading && !error && (
                   <tr>
-                    <td colSpan="4" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                       Không tìm thấy cuộc gọi nào trong hệ thống.
                     </td>
                   </tr>

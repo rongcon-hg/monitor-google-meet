@@ -55,16 +55,34 @@ export default async function handler(req, res) {
       const meetCode = meetCodeParam ? meetCodeParam.value : null;
       
       if (meetCode) {
+        const eventTime = new Date(event.id.time).getTime();
+        
         if (!meetings[meetCode]) {
           meetings[meetCode] = { 
             id: meetCode,
             code: meetCode, 
             participants: [], 
             eventCount: 0, 
-            lastActive: event.id.time 
+            lastActive: event.id.time,
+            startTime: event.id.time,
+            endTime: event.id.time,
+            _minTime: eventTime,
+            _maxTime: eventTime
           };
         }
+        
         meetings[meetCode].eventCount += 1;
+        
+        // Cập nhật startTime và endTime
+        if (eventTime < meetings[meetCode]._minTime) {
+          meetings[meetCode]._minTime = eventTime;
+          meetings[meetCode].startTime = event.id.time;
+        }
+        if (eventTime > meetings[meetCode]._maxTime) {
+          meetings[meetCode]._maxTime = eventTime;
+          meetings[meetCode].endTime = event.id.time;
+          meetings[meetCode].lastActive = event.id.time;
+        }
         
         const actorEmail = event.actor ? event.actor.email : 'Unknown User';
         if (!meetings[meetCode].participants.find(p => p.email === actorEmail)) {
@@ -80,7 +98,12 @@ export default async function handler(req, res) {
       }
     });
 
-    const activeMeetings = Object.values(meetings);
+    const activeMeetings = Object.values(meetings).map(m => {
+      // Dọn dẹp các trường tạm
+      delete m._minTime;
+      delete m._maxTime;
+      return m;
+    });
 
     res.status(200).json({ success: true, data: activeMeetings, totalEvents: events.length });
   } catch (error) {
