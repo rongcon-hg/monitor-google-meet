@@ -10,8 +10,8 @@ export function useWorkspaceMeetings() {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API từ Backend Node.js
-      const response = await fetch('http://localhost:3001/api/meetings');
+      // Gọi API từ Vercel Serverless Function
+      const response = await fetch('/api/meetings');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
