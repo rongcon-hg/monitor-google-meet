@@ -1,75 +1,48 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
-
-export function AnalyticsCharts({ timelineData, participants }) {
-  const activeSpeakers = participants.filter(p => p.talkTime > 0);
+export function AnalyticsCharts({ events = [] }) {
+  // Aggregate events per minute
+  const chartDataMap = {};
+  events.forEach(e => {
+    const timeKey = format(new Date(e.time), 'HH:mm');
+    if (!chartDataMap[timeKey]) {
+      chartDataMap[timeKey] = { time: timeKey, events: 0 };
+    }
+    chartDataMap[timeKey].events += 1;
+  });
   
-  // Format data for PieChart
-  const pieData = activeSpeakers.map(p => ({
-    name: p.name,
-    value: p.talkTime
-  })).sort((a, b) => b.value - a.value).slice(0, 5); // top 5 speakers
+  const chartData = Object.values(chartDataMap);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-      <div className="glass-card animate-fade-in">
-        <h3 style={{ marginBottom: '16px', fontSize: '16px' }}>Biến động người tham gia</h3>
-        <div style={{ height: '200px' }}>
-          {timelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData}>
-                <XAxis dataKey="time" stroke="var(--text-secondary)" fontSize={12} tickFormatter={(val) => `${val}s`} />
-                <YAxis stroke="var(--text-secondary)" fontSize={12} allowDecimals={false} />
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: 'var(--bg-dark)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--text-primary)' }}
-                />
-                <Line type="monotone" dataKey="participants" stroke="var(--accent-primary)" strokeWidth={3} dot={false} name="Tổng số người" />
-                <Line type="monotone" dataKey="activeSpeakers" stroke="var(--success)" strokeWidth={2} dot={false} name="Người đang nói" />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-              Đang chờ dữ liệu...
-            </div>
-          )}
-        </div>
+    <div className="glass-card" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
+      <div className="card-title" style={{ marginBottom: '16px' }}>
+        <span>Phân Tích & Biểu Đồ Thời Gian Thực</span>
+        <span style={{ color: 'var(--accent-primary)', cursor: 'pointer', background: 'rgba(59, 130, 246, 0.1)', padding: '4px 12px', borderRadius: '4px' }}>
+          Tần suất hoạt động
+        </span>
       </div>
-
-      <div className="glass-card animate-fade-in">
-        <h3 style={{ marginBottom: '16px', fontSize: '16px' }}>Tỷ lệ phát biểu (Top 5)</h3>
-        <div style={{ height: '200px' }}>
-          {pieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: 'var(--bg-dark)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--text-primary)' }}
-                  formatter={(value) => [`${value}s`, 'Thời gian nói']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-              Chưa có ai phát biểu.
-            </div>
-          )}
-        </div>
+      
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="time" stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px' }}
+                itemStyle={{ color: 'var(--accent-primary)' }}
+              />
+              <Line type="monotone" dataKey="events" stroke="var(--accent-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--bg-dark)' }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+            Chưa đủ dữ liệu biểu đồ
+          </div>
+        )}
       </div>
     </div>
   );

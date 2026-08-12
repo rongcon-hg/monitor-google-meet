@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
-import { RefreshCw, Users, Server, Activity, AlertTriangle, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Users, Server, Activity, AlertTriangle, Download, Clock, Video } from 'lucide-react';
 import { useWorkspaceMeetings } from './engine/api';
 import { exportMeetingsToExcel } from './utils/export';
-import { format } from 'date-fns';
+import { ParticipantList } from './components/ParticipantList';
+import { AnalyticsCharts } from './components/AnalyticsCharts';
+import { AuditLog } from './components/AuditLog';
+import { QuickNotes } from './components/QuickNotes';
+import { format, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import './App.css';
 import './index.css';
 
 function App() {
   const { meetings, isLoading, error, lastUpdated, fetchMeetings } = useWorkspaceMeetings();
-  const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [selectedMeetId, setSelectedMeetId] = useState('');
 
-  const totalParticipants = meetings.reduce((acc, m) => acc + m.participants.length, 0);
+  // Auto-select first meeting if none selected and data loaded
+  useEffect(() => {
+    if (meetings.length > 0 && !selectedMeetId) {
+      setSelectedMeetId(meetings[0].id);
+    } else if (meetings.length === 0 && selectedMeetId) {
+      setSelectedMeetId('');
+    }
+  }, [meetings, selectedMeetId]);
+
+  const activeMeeting = meetings.find(m => m.id === selectedMeetId);
 
   const handleExport = () => {
     exportMeetingsToExcel(meetings);
+  };
+
+  const getDurationString = (startStr, endStr) => {
+    if (!startStr) return '00:00';
+    const start = new Date(startStr);
+    const end = endStr ? new Date(endStr) : new Date();
+    const diffSecs = differenceInSeconds(end, start);
+    if (diffSecs < 0) return '00:00';
+    const m = Math.floor(diffSecs / 60).toString().padStart(2, '0');
+    const s = (diffSecs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   return (
@@ -21,21 +45,39 @@ function App() {
       <header className="header">
         <div className="header-title">
           <div style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Server color="white" />
+            <Video color="white" />
           </div>
-          <h1>Google Workspace - Meet Admin Monitor</h1>
+          <h1>Meet Tracker Pro</h1>
+          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '4px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }}></div>
+            Đang diễn ra
+          </div>
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-            Cập nhật lần cuối: {lastUpdated ? format(lastUpdated, 'HH:mm:ss') : 'Chưa có'}
-          </span>
+          <select 
+            className="search-bar"
+            style={{ width: '280px', margin: 0 }}
+            value={selectedMeetId}
+            onChange={(e) => setSelectedMeetId(e.target.value)}
+          >
+            {meetings.length === 0 ? (
+              <option value="">Không có phòng họp nào</option>
+            ) : (
+              meetings.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.code.match(/.{1,3}/g)?.join('-') || m.code} ({m.participants.length} người)
+                </option>
+              ))
+            )}
+          </select>
+
           <button className="btn" onClick={fetchMeetings} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> 
-            {isLoading ? 'Đang tải...' : 'Làm mới'}
+            Đồng bộ Workspace Live
           </button>
-          <button className="btn btn-secondary" onClick={handleExport} disabled={meetings.length === 0} title="Xuất báo cáo Excel">
-            <Download size={16} /> Xuất Excel
+          <button className="btn btn-secondary" onClick={handleExport} disabled={meetings.length === 0}>
+            <Download size={16} /> Xuất Báo Cáo
           </button>
         </div>
       </header>
@@ -43,123 +85,82 @@ function App() {
       {error && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', padding: '16px', borderRadius: '8px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
           <AlertTriangle size={20} />
-          <span><strong>Lỗi kết nối API:</strong> {error}. Hãy đảm bảo bạn đã điền Biến môi trường trên Vercel.</span>
+          <span><strong>Lỗi kết nối API:</strong> {error}</span>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ padding: '16px', background: 'rgba(59, 130, 246, 0.2)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
-            <Activity size={24} />
-          </div>
-          <div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Tổng số cuộc gọi (Domain)</div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{meetings.length}</div>
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '12px', color: 'var(--success)' }}>
-            <Users size={24} />
-          </div>
-          <div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Tổng người tham gia</div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{totalParticipants}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-grid">
-        <div className="main-content">
-          <div className="glass-card animate-fade-in" style={{ overflowX: 'auto', minHeight: '400px' }}>
-            <h2 style={{ marginBottom: '16px', fontSize: '18px' }}>Danh sách Cuộc gọi toàn hệ thống</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Mã phòng</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Số người</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Bắt đầu</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Kết thúc (Gần nhất)</th>
-                  <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {meetings.map(m => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', background: selectedMeeting?.id === m.id ? 'rgba(255,255,255,0.05)' : 'transparent' }}>
-                    <td style={{ padding: '12px 8px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
-                      {m.code.match(/.{1,3}/g)?.join('-') || m.code}
-                    </td>
-                    <td style={{ padding: '12px 8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Users size={14} color="var(--text-secondary)" /> {m.participants.length}
-                      </div>
-                    </td>
-                    <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                      {m.startTime ? format(new Date(m.startTime), 'HH:mm - dd/MM') : 'N/A'}
-                    </td>
-                    <td style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>
-                      {m.endTime ? format(new Date(m.endTime), 'HH:mm - dd/MM') : 'N/A'}
-                    </td>
-                    <td style={{ padding: '12px 8px' }}>
-                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => setSelectedMeeting(m)}>
-                        Chi tiết
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {meetings.length === 0 && !isLoading && !error && (
-                  <tr>
-                    <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                      Không tìm thấy cuộc gọi nào trong hệ thống.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="sidebar">
-          {selectedMeeting ? (
-            <div className="glass-card animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
-              <h3 style={{ marginBottom: '16px', fontSize: '16px', color: 'var(--accent-primary)' }}>
-                Chi tiết phòng: {selectedMeeting.code}
-              </h3>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
-                Tổng số sự kiện (Events): {selectedMeeting.eventCount}
+      {activeMeeting ? (
+        <>
+          <div className="top-cards-grid animate-fade-in">
+            <div className="glass-card">
+              <div className="card-title">
+                <span>Thời Gian Cuộc Gọi</span>
+                <Clock size={16} color="var(--accent-primary)" />
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
-                <strong style={{ fontSize: '14px' }}>Danh sách người tham dự:</strong>
-                {selectedMeeting.participants.map(p => (
-                  <div key={p.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '13px', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px' }}>
-                    <div style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 'bold', fontSize: '12px'
-                    }}>
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ color: 'var(--text-primary)' }}>{p.name}</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{p.email}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="card-value" style={{ margin: '16px 0' }}>
+                {getDurationString(activeMeeting.startTime, activeMeeting.endTime)}
+                <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 'normal', marginLeft: 'auto' }}>
+                  ▶ Đang tính
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span>Bắt đầu: <strong style={{ color: 'var(--text-primary)' }}>{format(new Date(activeMeeting.startTime), 'HH:mm')}</strong></span>
+                <span>Cập nhật: <strong style={{ color: 'var(--text-primary)' }}>{format(new Date(activeMeeting.endTime), 'HH:mm')}</strong></span>
               </div>
             </div>
-          ) : (
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '400px', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <Users size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-              Chọn một phòng họp để xem chi tiết danh sách người tham gia.
-              <br/><br/>
-              <span style={{ fontSize: '12px', fontStyle: 'italic', opacity: 0.7 }}>
-                Lưu ý: API toàn cục không cung cấp dữ liệu Chat hoặc trạng thái Mic/Cam thời gian thực.
-              </span>
+
+            <div className="glass-card">
+              <div className="card-title">
+                <span>Người Tham Dự Hiệu Lực</span>
+                <Users size={16} color="var(--success)" />
+              </div>
+              <div className="card-value" style={{ margin: '16px 0' }}>
+                {activeMeeting.participants.length} <span style={{ fontSize: '14px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>người</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span>Đã tham gia: <strong style={{ color: 'var(--text-primary)' }}>{activeMeeting.participants.length}</strong></span>
+              </div>
             </div>
-          )}
+
+            <div className="glass-card">
+              <div className="card-title">
+                <span>Tổng Số Sự Kiện</span>
+                <Activity size={16} color="var(--accent-secondary)" />
+              </div>
+              <div className="card-value" style={{ margin: '16px 0' }}>
+                {activeMeeting.eventCount} <span style={{ fontSize: '14px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>logs</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span>Trung bình <strong style={{ color: 'var(--text-primary)' }}>{(activeMeeting.eventCount / Math.max(1, activeMeeting.participants.length)).toFixed(1)}</strong> sự kiện/người</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="main-layout animate-fade-in">
+            <div className="left-panel">
+              <ParticipantList participants={activeMeeting.participants} />
+            </div>
+            
+            <div className="right-panel">
+              <AnalyticsCharts events={activeMeeting.events} />
+              
+              <div className="bottom-split">
+                <AuditLog events={activeMeeting.events} />
+                <QuickNotes meetCode={activeMeeting.code} />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '400px', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <Server size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+          Chưa có cuộc gọi nào đang diễn ra trong tổ chức của bạn.
+          <br/><br/>
+          <span style={{ fontSize: '12px', fontStyle: 'italic', opacity: 0.7 }}>
+            Hãy đảm bảo bạn đã cấu hình Biến môi trường đúng trên Vercel.
+          </span>
         </div>
-      </div>
+      )}
     </div>
   );
 }

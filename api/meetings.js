@@ -66,6 +66,7 @@ export default async function handler(req, res) {
             lastActive: event.id.time,
             startTime: event.id.time,
             endTime: event.id.time,
+            events: [],
             _minTime: eventTime,
             _maxTime: eventTime
           };
@@ -85,9 +86,9 @@ export default async function handler(req, res) {
         }
         
         const actorEmail = event.actor ? event.actor.email : 'Unknown User';
+        const namePart = actorEmail && typeof actorEmail === 'string' ? actorEmail.split('@')[0] : 'Unknown';
+        
         if (!meetings[meetCode].participants.find(p => p.email === actorEmail)) {
-          // Check to prevent crash if email is somehow missing/undefined
-          const namePart = actorEmail && typeof actorEmail === 'string' ? actorEmail.split('@')[0] : 'Unknown';
           meetings[meetCode].participants.push({
             id: actorEmail,
             email: actorEmail,
@@ -95,6 +96,14 @@ export default async function handler(req, res) {
             joinTime: event.id.time
           });
         }
+
+        // Đưa sự kiện vào danh sách nhật ký
+        meetings[meetCode].events.push({
+          id: `${event.id.time}-${actorEmail}`,
+          time: event.id.time,
+          actorName: namePart,
+          eventName: event.events[0]?.name || 'unknown_event'
+        });
       }
     });
 
@@ -102,6 +111,8 @@ export default async function handler(req, res) {
       // Dọn dẹp các trường tạm
       delete m._minTime;
       delete m._maxTime;
+      // Sort events by time ascending
+      m.events.sort((a, b) => new Date(a.time) - new Date(b.time));
       return m;
     });
 

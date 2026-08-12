@@ -1,54 +1,139 @@
-/* App.css is intentionally left mostly empty as we use index.css for global styles */
 .app-container {
-  padding: 24px;
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: 24px;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 32px;
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .header-title h1 {
-  font-size: 24px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-.dashboard-grid {
+.top-cards-grid {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  align-items: start;
+  margin-bottom: 24px;
 }
 
-@media (max-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.card-title {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.main-content {
+.card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+}
+
+.left-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.sidebar {
+.right-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.bottom-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  height: 300px; /* Fixed height for log/notes */
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Specific component styles */
+.search-bar {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--card-border);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  outline: none;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.participant-item:last-child {
+  border-bottom: none;
+}
+
+.participant-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.textarea-notes {
+  width: 100%;
+  height: calc(100% - 30px);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: none;
+  outline: none;
 }

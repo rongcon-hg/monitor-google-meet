@@ -1,68 +1,52 @@
-import React from 'react';
-import { Mic, MicOff, Video, VideoOff, Hand, MonitorUp, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import { format } from 'date-fns';
 
 export function ParticipantList({ participants }) {
+  const [search, setSearch] = useState('');
+
+  const filtered = participants.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="glass-card animate-fade-in" style={{ overflowX: 'auto' }}>
-      <h2 style={{ marginBottom: '16px', fontSize: '18px' }}>Danh sách người tham dự ({participants.length})</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-            <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Họ và tên</th>
-            <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Trạng thái</th>
-            <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Thời lượng phát biểu</th>
-            <th style={{ padding: '12px 8px', color: 'var(--text-secondary)' }}>Chỉ số tích cực</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participants.map(p => (
-            <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
-              <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 'bold', fontSize: '14px'
-                }}>
-                  {p.name.charAt(0)}
-                </div>
-                {p.name}
-                {p.handRaised && <Hand size={16} color="var(--warning)" className="animate-pulse" />}
-                {p.screenSharing && <MonitorUp size={16} color="var(--success)" className="animate-pulse" />}
-              </td>
-              <td style={{ padding: '12px 8px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {p.micOn ? <Mic size={18} color="var(--success)" /> : <MicOff size={18} color="var(--danger)" />}
-                  {p.camOn ? <Video size={18} color="var(--accent-primary)" /> : <VideoOff size={18} color="var(--text-secondary)" />}
-                </div>
-              </td>
-              <td style={{ padding: '12px 8px' }}>
-                {p.talkTime}s
-              </td>
-              <td style={{ padding: '12px 8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '60px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ 
-                      width: `${p.engagement}%`, 
-                      height: '100%', 
-                      background: p.engagement > 50 ? 'var(--success)' : 'var(--warning)',
-                      transition: 'width 0.5s ease'
-                    }} />
-                  </div>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{Math.round(p.engagement)}%</span>
-                </div>
-              </td>
-            </tr>
-          ))}
-          {participants.length === 0 && (
-            <tr>
-              <td colSpan="4" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                Chưa có ai tham gia. Hãy bắt đầu mô phỏng.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="card-title" style={{ marginBottom: '16px' }}>
+        <span>Danh Sách Thành Viên</span>
+        <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '12px' }}>{participants.length}</span>
+      </div>
+      
+      <input 
+        type="text" 
+        className="search-bar" 
+        placeholder="Tìm kiếm tên, email..." 
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {filtered.map(p => (
+          <div key={p.id} className="participant-item">
+            <div className="participant-info">
+              <div className="avatar">
+                {p.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontWeight: '500' }}>{p.name}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p.email}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {format(new Date(p.joinTime), 'HH:mm')}
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
+            Không tìm thấy ai.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
