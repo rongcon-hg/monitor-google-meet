@@ -3,11 +3,22 @@ import { format } from 'date-fns';
 
 export function ParticipantList({ participants }) {
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const filtered = participants.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   return (
     <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -25,7 +36,7 @@ export function ParticipantList({ participants }) {
       />
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {filtered.map(p => (
+        {paginated.map(p => (
           <div key={p.id} className="participant-item">
             <div className="participant-info">
               <div className="avatar">
@@ -47,6 +58,28 @@ export function ParticipantList({ participants }) {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--card-border)' }}>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '4px 12px', fontSize: '12px' }}
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+          >
+            Trang trước
+          </button>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Trang {currentPage} / {totalPages}</span>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '4px 12px', fontSize: '12px' }}
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
+          >
+            Trang sau
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { RefreshCw, Users, Server, Activity, AlertTriangle, Download, Clock, Video } from 'lucide-react';
 import { useWorkspaceMeetings } from './engine/api';
 import { exportMeetingsToExcel } from './utils/export';
@@ -55,22 +56,44 @@ function App() {
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <select 
-            className="search-bar"
-            style={{ width: '280px', margin: 0 }}
-            value={selectedMeetId}
-            onChange={(e) => setSelectedMeetId(e.target.value)}
-          >
-            {meetings.length === 0 ? (
-              <option value="">Không có phòng họp nào</option>
-            ) : (
-              meetings.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.code.match(/.{1,3}/g)?.join('-') || m.code} ({m.participants.length} người)
-                </option>
-              ))
-            )}
-          </select>
+          <div style={{ width: '320px' }}>
+            <Select 
+              value={meetings.length > 0 ? { value: selectedMeetId, label: meetings.find(m => m.id === selectedMeetId)?.code || selectedMeetId } : null}
+              onChange={(selected) => setSelectedMeetId(selected.value)}
+              options={meetings.map(m => ({
+                value: m.id,
+                label: `${m.code.match(/.{1,3}/g)?.join('-') || m.code} (${m.participants.length} người)`
+              }))}
+              placeholder="Tìm kiếm hoặc chọn mã phòng..."
+              noOptionsMessage={() => "Không tìm thấy phòng"}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  background: 'rgba(0,0,0,0.2)',
+                  borderColor: 'var(--card-border)',
+                  color: 'white',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    borderColor: 'var(--accent-primary)'
+                  }
+                }),
+                singleValue: (base) => ({ ...base, color: 'white' }),
+                input: (base) => ({ ...base, color: 'white' }),
+                menu: (base) => ({
+                  ...base,
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)'
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isFocused ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                })
+              }}
+            />
+          </div>
 
           <button className="btn" onClick={fetchMeetings} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> 

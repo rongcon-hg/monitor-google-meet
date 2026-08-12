@@ -120,7 +120,51 @@ export default async function handler(req, res) {
       return m;
     });
 
-    res.status(200).json({ success: true, data: activeMeetings, totalEvents: events.length });
+    // -------- UPSERT INTO NEON POSTGRES --------
+    if (process.env.DATABASE_URL && activeMeetings.length > 0) {
+      const { Client } = require('pg');
+      const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+      });
+      
+      try {
+        await client.connect();
+        for (const m of activeMeetings) {
+          const query = `
+            INSERT INTO meetings_history (meeting_code, start_time, end_time, participant_count, event_count, participants, events, last_synced)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+            ON CONFLICT (meeting_code) DO UPDATE SET 
+              end_time = EXCLUDED.end_time,
+              participant_count = EXCLUDED.participant_count,
+              event_count = EXCLUDED.event_count,
+              participants = EXCLUDED.participants,
+              events = EXCLUDED.events,
+              last_synced = CURRENT_TIMESTAMP;
+          `;
+          await client.query(query, [
+            m.code, 
+            m.startTime, 
+            m.endTime, 
+            m.participants.length, 
+            m.eventCount, 
+            JSON.stringify(m.participants), 
+            JSON.stringify(m.events)
+          ]);
+        }
+      } catch (dbErr) {
+        console.error("Lỗi khi lưu vào PostgreSQL:", dbErr);
+      } finally {
+        await client.end();
+      }
+    }
+    // ------------------------------------------
+
+    res.status(200).json({
+      success: true,
+      lastUpdated: new Date().toISOString(),
+      meetings: activeMeetings,
+      totalEventsFound: activeMeetings.reduce((sum, m) => sum + m.eventCount, 0)
+    });
   } catch (error) {
     console.error("API Error:", error);
     res.status(500).json({ success: false, error: error.message });
