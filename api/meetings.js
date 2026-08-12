@@ -85,8 +85,12 @@ export default async function handler(req, res) {
           meetings[meetCode].lastActive = event.id.time;
         }
         
-        const actorEmail = event.actor ? event.actor.email : 'Unknown User';
-        const namePart = actorEmail && typeof actorEmail === 'string' ? actorEmail.split('@')[0] : 'Unknown';
+        const params = event.events[0]?.parameters || [];
+        const paramMap = {};
+        params.forEach(p => paramMap[p.name] = p.value || p.intValue || p.boolValue);
+
+        const actorEmail = event.actor?.email || paramMap['identifier'] || 'Khách (Ẩn danh)';
+        const namePart = paramMap['display_name'] || (actorEmail.includes('@') ? actorEmail.split('@')[0] : actorEmail);
         
         if (!meetings[meetCode].participants.find(p => p.email === actorEmail)) {
           meetings[meetCode].participants.push({
