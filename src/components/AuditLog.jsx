@@ -36,7 +36,7 @@ export function AuditLog({ events = [] }) {
             alignItems: 'center'
           }}>
             <span style={{ color: 'var(--text-secondary)', fontSize: '11px', minWidth: '60px' }}>
-              {format(new Date(evt.time), 'HH:mm:ss')}
+              {evt.time ? format(new Date(evt.time), 'HH:mm:ss') : '--:--:--'}
             </span>
             <span style={{ color: 'var(--text-primary)' }}>
               <strong>{evt.actorName}</strong> đã phát sinh sự kiện <em style={{opacity: 0.7}}>({evt.eventName})</em>.

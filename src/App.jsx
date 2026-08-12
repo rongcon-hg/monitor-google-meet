@@ -127,8 +127,8 @@ function App() {
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                <span>Bắt đầu: <strong style={{ color: 'var(--text-primary)' }}>{format(new Date(activeMeeting.startTime), 'HH:mm')}</strong></span>
-                <span>Cập nhật: <strong style={{ color: 'var(--text-primary)' }}>{format(new Date(activeMeeting.endTime), 'HH:mm')}</strong></span>
+                <span>Bắt đầu: <strong style={{ color: 'var(--text-primary)' }}>{activeMeeting.startTime ? format(new Date(activeMeeting.startTime), 'HH:mm') : '--:--'}</strong></span>
+                <span>Cập nhật: <strong style={{ color: 'var(--text-primary)' }}>{activeMeeting.endTime ? format(new Date(activeMeeting.endTime), 'HH:mm') : '--:--'}</strong></span>
               </div>
             </div>
 
