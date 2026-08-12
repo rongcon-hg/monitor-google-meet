@@ -14,7 +14,7 @@ import './index.css';
 function App() {
   const [activeTab, setActiveTab] = useState('live'); // 'live' or 'history'
   
-  const { meetings: liveMeetings, isLoading: isLiveLoading, error: liveError, fetchMeetings: fetchLiveMeetings } = useWorkspaceMeetings();
+  const { meetings: liveMeetings, isLoading: isLiveLoading, error: liveError, fetchMeetings: fetchLiveMeetings } = useWorkspaceMeetings(activeTab === 'live');
   const { historyMeetings, isLoading: isHistoryLoading, error: historyError, fetchHistory } = useHistoryMeetings();
   
   const [selectedMeetId, setSelectedMeetId] = useState('');

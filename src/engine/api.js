@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export function useWorkspaceMeetings() {
+export function useWorkspaceMeetings(isActive = true) {
   const [meetings, setMeetings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,12 +31,23 @@ export function useWorkspaceMeetings() {
     }
   }, []);
 
-  // Tự động tải dữ liệu mỗi 10 giây
+  // Tự động tải dữ liệu và tối ưu Request
   useEffect(() => {
+    if (!isActive) return;
+
+    // Tải lần đầu khi component hoặc tab Active
     fetchMeetings();
-    const interval = setInterval(fetchMeetings, 10000);
+
+    // Chỉnh interval lên 30s để tiết kiệm CPU và giới hạn Vercel
+    const interval = setInterval(() => {
+      // Chỉ gửi request nếu trình duyệt đang mở (không bị thu nhỏ / khác tab)
+      if (document.visibilityState === 'visible') {
+        fetchMeetings();
+      }
+    }, 30000);
+
     return () => clearInterval(interval);
-  }, [fetchMeetings]);
+  }, [fetchMeetings, isActive]);
 
   return {
     meetings,
