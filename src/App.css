@@ -74,7 +74,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  height: 400px; /* Fixed height for log/notes */
+  flex: 1; /* Stretch to fill remaining space in right-panel */
 }
 
 .bottom-split > * {
