@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import pg from 'pg';
 
 export default async function handler(req, res) {
   // Cấu hình CORS cho phép Vercel
@@ -145,8 +146,7 @@ export default async function handler(req, res) {
 
     // -------- UPSERT INTO NEON POSTGRES --------
     if (process.env.DATABASE_URL && activeMeetings.length > 0) {
-      const { Client } = require('pg');
-      const client = new Client({
+      const client = new pg.Client({
         connectionString: process.env.DATABASE_URL,
       });
       
