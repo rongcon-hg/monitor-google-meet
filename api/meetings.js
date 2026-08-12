@@ -96,13 +96,28 @@ export default async function handler(req, res) {
         const actorEmail = event.actor?.email || paramMap['identifier'] || 'Khách (Ẩn danh)';
         const namePart = paramMap['display_name'] || (actorEmail.includes('@') ? actorEmail.split('@')[0] : actorEmail);
         
-        if (!meetings[meetCode].participants.find(p => p.email === actorEmail)) {
-          meetings[meetCode].participants.push({
+        let participant = meetings[meetCode].participants.find(p => p.email === actorEmail);
+        if (!participant) {
+          participant = {
             id: actorEmail,
             email: actorEmail,
             name: namePart,
-            joinTime: event.id.time
-          });
+            joinTime: event.id.time,
+            leaveTime: event.id.time,
+            _minTime: eventTime,
+            _maxTime: eventTime
+          };
+          meetings[meetCode].participants.push(participant);
+        } else {
+          // Update join and leave times
+          if (eventTime < participant._minTime) {
+            participant._minTime = eventTime;
+            participant.joinTime = event.id.time;
+          }
+          if (eventTime > participant._maxTime) {
+            participant._maxTime = eventTime;
+            participant.leaveTime = event.id.time;
+          }
         }
 
         // Đưa sự kiện vào danh sách nhật ký
@@ -119,6 +134,10 @@ export default async function handler(req, res) {
       // Dọn dẹp các trường tạm
       delete m._minTime;
       delete m._maxTime;
+      m.participants.forEach(p => {
+        delete p._minTime;
+        delete p._maxTime;
+      });
       // Sort events by time ascending
       m.events.sort((a, b) => new Date(a.time) - new Date(b.time));
       return m;

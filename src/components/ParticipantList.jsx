@@ -79,8 +79,9 @@ export function ParticipantList({ participants, organizerEmail }) {
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p.email}</div>
               </div>
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              {format(new Date(p.joinTime), 'HH:mm')}
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'right' }}>
+              <div style={{ color: 'var(--success)' }}>Vào: {format(new Date(p.joinTime), 'HH:mm:ss')}</div>
+              <div style={{ color: 'var(--danger)', opacity: 0.8 }}>Ra: {format(new Date(p.leaveTime), 'HH:mm:ss')}</div>
             </div>
           </div>
         )})}
