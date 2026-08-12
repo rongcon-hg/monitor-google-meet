@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { Mic, MicOff, Video, VideoOff, MessageSquare, LogIn, LogOut, Info, PhoneOff } from 'lucide-react';
 
 export function AuditLog({ events = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -16,6 +17,58 @@ export function AuditLog({ events = [] }) {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [events.length]);
+
+  const renderEventDetails = (evt) => {
+    const { eventName, params = {} } = evt;
+    
+    // Fallbacks to generic
+    let Icon = Info;
+    let color = 'var(--text-secondary)';
+    let text = `đã phát sinh sự kiện (${eventName})`;
+
+    if (eventName === 'call_ended') {
+      Icon = PhoneOff;
+      color = 'var(--danger)';
+      text = 'đã rời hoặc kết thúc cuộc gọi';
+    } else if (eventName === 'endpoint_join') {
+      Icon = LogIn;
+      color = 'var(--success)';
+      text = 'đã tham gia cuộc gọi';
+    } else if (eventName === 'endpoint_left') {
+      Icon = LogOut;
+      color = 'var(--danger)';
+      text = 'đã rời cuộc gọi';
+    } else if (eventName.includes('chat_message_sent')) {
+      Icon = MessageSquare;
+      color = '#3b82f6';
+      text = 'đã gửi một tin nhắn vào khung chat';
+    } else if (eventName.includes('audio_mute') || eventName.includes('mute_audio')) {
+      Icon = MicOff;
+      color = '#eab308';
+      text = 'đã thay đổi trạng thái Micro';
+    } else if (eventName.includes('video_mute') || eventName.includes('mute_video')) {
+      Icon = VideoOff;
+      color = '#eab308';
+      text = 'đã thay đổi trạng thái Camera';
+    } else if (eventName === 'presentation_started') {
+      Icon = Video;
+      color = 'var(--accent-secondary)';
+      text = 'đã bắt đầu trình chiếu màn hình';
+    } else if (eventName === 'presentation_ended') {
+      Icon = VideoOff;
+      color = 'var(--accent-secondary)';
+      text = 'đã dừng trình chiếu màn hình';
+    }
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Icon size={14} color={color} />
+        <span style={{ color: 'var(--text-primary)' }}>
+          <strong>{evt.actorName}</strong> {text}.
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="glass-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -38,9 +91,7 @@ export function AuditLog({ events = [] }) {
             <span style={{ color: 'var(--text-secondary)', fontSize: '11px', minWidth: '60px' }}>
               {evt.time ? format(new Date(evt.time), 'HH:mm:ss') : '--:--:--'}
             </span>
-            <span style={{ color: 'var(--text-primary)' }}>
-              <strong>{evt.actorName}</strong> đã phát sinh sự kiện <em style={{opacity: 0.7}}>({evt.eventName})</em>.
-            </span>
+            {renderEventDetails(evt)}
           </div>
         ))}
         {events.length === 0 && (

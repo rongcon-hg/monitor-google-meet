@@ -104,38 +104,42 @@ export default async function handler(req, res) {
             email: actorEmail,
             name: namePart,
             joinTime: event.id.time,
-            leaveTime: event.id.time,
-            _minTime: eventTime,
-            _maxTime: eventTime
+            leaveTime: null,
+            status: 'active'
           };
           meetings[meetCode].participants.push(participant);
-        } else {
-          // Update join and leave times
-          if (eventTime < participant._minTime) {
-            participant._minTime = eventTime;
-            participant.joinTime = event.id.time;
-          }
-          if (eventTime > participant._maxTime) {
-            participant._maxTime = eventTime;
-            participant.leaveTime = event.id.time;
-          }
+          // We will calculate precise join/leave times later after collecting all events
         }
 
         // Đưa sự kiện vào danh sách nhật ký
         meetings[meetCode].events.push({
-          id: `${event.id.time}-${actorEmail}`,
+          id: `${event.id.time}-${actorEmail}-${Math.random().toString(36).substr(2, 9)}`,
           time: event.id.time,
           actorName: namePart,
-          eventName: event.events[0]?.name || 'unknown_event'
+          actorEmail: actorEmail,
+          eventName: event.events[0]?.name || 'unknown_event',
+          params: paramMap
         });
       }
     });
 
     const activeMeetings = Object.values(meetings).map(m => {
-      // Dọn dẹp các trường tạm
       delete m._minTime;
       delete m._maxTime;
       m.participants.forEach(p => {
+        // Sort participant events by time
+        const pEvents = m.events.filter(e => e.actorEmail === p.email).sort((a, b) => new Date(a.time) - new Date(b.time));
+        if (pEvents.length > 0) {
+          p.joinTime = pEvents[0].time;
+          const lastEvent = pEvents[pEvents.length - 1];
+          if (lastEvent.eventName === 'call_ended') {
+            p.leaveTime = lastEvent.time;
+            p.status = 'left';
+          } else {
+            p.leaveTime = null;
+            p.status = 'active';
+          }
+        }
         delete p._minTime;
         delete p._maxTime;
       });

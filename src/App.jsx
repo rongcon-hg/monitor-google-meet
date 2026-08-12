@@ -72,8 +72,8 @@ function App() {
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
+        <div className="header-controls">
+          <div className="tab-switcher">
             <button 
               className={`btn ${activeTab === 'live' ? 'btn-primary' : ''}`}
               style={{ padding: '6px 12px', background: activeTab === 'live' ? 'var(--accent-primary)' : 'transparent', color: activeTab === 'live' ? 'white' : 'var(--text-secondary)', border: 'none' }}
@@ -90,7 +90,7 @@ function App() {
             </button>
           </div>
 
-          <div style={{ width: '320px', marginLeft: '12px' }}>
+          <div className="meet-selector">
             <Select 
               value={currentMeetings.length > 0 ? { value: selectedMeetId, label: currentMeetings.find(m => m.id === selectedMeetId)?.code || selectedMeetId } : null}
               onChange={(selected) => setSelectedMeetId(selected.value)}
