@@ -13,6 +13,7 @@ import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('live'); // 'live' or 'history'
+  const [historyDate, setHistoryDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
   const { meetings: liveMeetings, isLoading: isLiveLoading, error: liveError, fetchMeetings: fetchLiveMeetings } = useWorkspaceMeetings(activeTab === 'live');
   const { historyMeetings, isLoading: isHistoryLoading, error: historyError, fetchHistory } = useHistoryMeetings();
@@ -23,12 +24,12 @@ function App() {
   const isLoading = activeTab === 'live' ? isLiveLoading : isHistoryLoading;
   const error = activeTab === 'live' ? liveError : historyError;
 
-  // Fetch history when tab changes
+  // Fetch history when tab or date changes
   useEffect(() => {
     if (activeTab === 'history') {
-      fetchHistory();
+      fetchHistory(historyDate);
     }
-  }, [activeTab, fetchHistory]);
+  }, [activeTab, historyDate, fetchHistory]);
 
   // Auto-select first meeting if none selected and data loaded
   useEffect(() => {
@@ -90,6 +91,16 @@ function App() {
             </button>
           </div>
 
+          {activeTab === 'history' && (
+            <input 
+              type="date" 
+              className="search-bar" 
+              style={{ width: 'auto', marginBottom: 0, padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: 'white', borderRadius: '8px' }} 
+              value={historyDate}
+              onChange={(e) => setHistoryDate(e.target.value)}
+            />
+          )}
+
           <div className="meet-selector">
             <Select 
               value={currentMeetings.length > 0 ? { value: selectedMeetId, label: currentMeetings.find(m => m.id === selectedMeetId)?.code || selectedMeetId } : null}
@@ -129,7 +140,7 @@ function App() {
             />
           </div>
 
-          <button className="btn" onClick={activeTab === 'live' ? fetchLiveMeetings : fetchHistory} disabled={isLoading}>
+          <button className="btn" onClick={() => activeTab === 'live' ? fetchLiveMeetings() : fetchHistory(historyDate)} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> 
             Đồng bộ
           </button>

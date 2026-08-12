@@ -30,14 +30,22 @@ export default async function handler(req, res) {
   try {
     await client.connect();
     
-    const query = `
+    const targetDate = req.query.date;
+    
+    let query = `
       SELECT meeting_code, start_time, end_time, participant_count, event_count, participants, events, last_synced
       FROM meetings_history
-      ORDER BY last_synced DESC
-      LIMIT 100
     `;
+    const queryParams = [];
+
+    if (targetDate) {
+      query += ` WHERE CAST(start_time AS DATE) = $1 `;
+      queryParams.push(targetDate);
+    }
+
+    query += ` ORDER BY last_synced DESC LIMIT 100 `;
     
-    const { rows } = await client.query(query);
+    const { rows } = await client.query(query, queryParams);
 
     // Map to same format as frontend expects for Live View
     const meetings = rows.map(row => {

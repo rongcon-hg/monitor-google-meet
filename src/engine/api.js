@@ -63,11 +63,12 @@ export function useHistoryMeetings() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (dateStr) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/history');
+      const url = dateStr ? `/api/history?date=${dateStr}` : '/api/history';
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
