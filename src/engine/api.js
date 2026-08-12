@@ -46,3 +46,39 @@ export function useWorkspaceMeetings() {
     fetchMeetings
   };
 }
+
+export function useHistoryMeetings() {
+  const [historyMeetings, setHistoryMeetings] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchHistory = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/history');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      
+      if (result.success) {
+        setHistoryMeetings(result.meetings || result.data || []);
+      } else {
+        throw new Error(result.error || "Lỗi không xác định từ Backend");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải dữ liệu lịch sử:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return {
+    historyMeetings,
+    isLoading,
+    error,
+    fetchHistory
+  };
+}

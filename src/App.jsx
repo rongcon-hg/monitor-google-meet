@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { RefreshCw, Users, Server, Activity, AlertTriangle, Download, Clock, Video } from 'lucide-react';
-import { useWorkspaceMeetings } from './engine/api';
+import { useWorkspaceMeetings, useHistoryMeetings } from './engine/api';
 import { exportMeetingsToExcel } from './utils/export';
 import { ParticipantList } from './components/ParticipantList';
 import { AnalyticsCharts } from './components/AnalyticsCharts';
@@ -12,22 +12,39 @@ import './App.css';
 import './index.css';
 
 function App() {
-  const { meetings, isLoading, error, lastUpdated, fetchMeetings } = useWorkspaceMeetings();
+  const [activeTab, setActiveTab] = useState('live'); // 'live' or 'history'
+  
+  const { meetings: liveMeetings, isLoading: isLiveLoading, error: liveError, fetchMeetings: fetchLiveMeetings } = useWorkspaceMeetings();
+  const { historyMeetings, isLoading: isHistoryLoading, error: historyError, fetchHistory } = useHistoryMeetings();
+  
   const [selectedMeetId, setSelectedMeetId] = useState('');
+
+  const currentMeetings = activeTab === 'live' ? liveMeetings : historyMeetings;
+  const isLoading = activeTab === 'live' ? isLiveLoading : isHistoryLoading;
+  const error = activeTab === 'live' ? liveError : historyError;
+
+  // Fetch history when tab changes
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchHistory();
+    }
+  }, [activeTab, fetchHistory]);
 
   // Auto-select first meeting if none selected and data loaded
   useEffect(() => {
-    if (meetings.length > 0 && !selectedMeetId) {
-      setSelectedMeetId(meetings[0].id);
-    } else if (meetings.length === 0 && selectedMeetId) {
+    if (currentMeetings.length > 0 && !selectedMeetId) {
+      setSelectedMeetId(currentMeetings[0].id);
+    } else if (currentMeetings.length === 0 && selectedMeetId) {
       setSelectedMeetId('');
     }
-  }, [meetings, selectedMeetId]);
+  }, [currentMeetings, selectedMeetId]);
 
-  const activeMeeting = meetings.find(m => m.id === selectedMeetId);
+  const activeMeeting = currentMeetings.find(m => m.id === selectedMeetId);
 
   const handleExport = () => {
-    exportMeetingsToExcel(meetings);
+    if (activeMeeting) {
+      exportMeetingsToExcel([activeMeeting]);
+    }
   };
 
   const getDurationString = (startStr, endStr) => {
@@ -56,11 +73,28 @@ function App() {
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ width: '320px' }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
+            <button 
+              className={`btn ${activeTab === 'live' ? 'btn-primary' : ''}`}
+              style={{ padding: '6px 12px', background: activeTab === 'live' ? 'var(--accent-primary)' : 'transparent', color: activeTab === 'live' ? 'white' : 'var(--text-secondary)', border: 'none' }}
+              onClick={() => { setActiveTab('live'); setSelectedMeetId(''); }}
+            >
+              Live Monitor
+            </button>
+            <button 
+              className={`btn ${activeTab === 'history' ? 'btn-primary' : ''}`}
+              style={{ padding: '6px 12px', background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent', color: activeTab === 'history' ? 'white' : 'var(--text-secondary)', border: 'none' }}
+              onClick={() => { setActiveTab('history'); setSelectedMeetId(''); }}
+            >
+              Lịch sử Database
+            </button>
+          </div>
+
+          <div style={{ width: '320px', marginLeft: '12px' }}>
             <Select 
-              value={meetings.length > 0 ? { value: selectedMeetId, label: meetings.find(m => m.id === selectedMeetId)?.code || selectedMeetId } : null}
+              value={currentMeetings.length > 0 ? { value: selectedMeetId, label: currentMeetings.find(m => m.id === selectedMeetId)?.code || selectedMeetId } : null}
               onChange={(selected) => setSelectedMeetId(selected.value)}
-              options={meetings.map(m => ({
+              options={currentMeetings.map(m => ({
                 value: m.id,
                 label: `${m.code.match(/.{1,3}/g)?.join('-') || m.code} (${m.participants.length} người)`
               }))}
@@ -95,11 +129,11 @@ function App() {
             />
           </div>
 
-          <button className="btn" onClick={fetchMeetings} disabled={isLoading}>
+          <button className="btn" onClick={activeTab === 'live' ? fetchLiveMeetings : fetchHistory} disabled={isLoading}>
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> 
-            Đồng bộ Workspace Live
+            Đồng bộ
           </button>
-          <button className="btn btn-secondary" onClick={handleExport} disabled={meetings.length === 0}>
+          <button className="btn btn-secondary" onClick={handleExport} disabled={currentMeetings.length === 0 || !activeMeeting}>
             <Download size={16} /> Xuất Báo Cáo
           </button>
         </div>
