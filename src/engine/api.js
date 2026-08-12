@@ -18,7 +18,7 @@ export function useWorkspaceMeetings() {
       const result = await response.json();
       
       if (result.success) {
-        setMeetings(result.data);
+        setMeetings(result.meetings || result.data || []);
         setLastUpdated(new Date());
       } else {
         throw new Error(result.error || "Lỗi không xác định từ Backend");
