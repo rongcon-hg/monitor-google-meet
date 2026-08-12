@@ -161,7 +161,10 @@ function App() {
 
           <div className="main-layout animate-fade-in">
             <div className="left-panel">
-              <ParticipantList participants={activeMeeting.participants} />
+              <ParticipantList 
+                participants={activeMeeting.participants} 
+                organizerEmail={activeMeeting.organizerEmail}
+              />
             </div>
             
             <div className="right-panel">

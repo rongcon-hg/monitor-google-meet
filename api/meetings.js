@@ -89,6 +89,10 @@ export default async function handler(req, res) {
         const paramMap = {};
         params.forEach(p => paramMap[p.name] = p.value || p.intValue || p.boolValue);
 
+        if (paramMap['organizer_email'] && !meetings[meetCode].organizerEmail) {
+          meetings[meetCode].organizerEmail = paramMap['organizer_email'];
+        }
+
         const actorEmail = event.actor?.email || paramMap['identifier'] || 'Khách (Ẩn danh)';
         const namePart = paramMap['display_name'] || (actorEmail.includes('@') ? actorEmail.split('@')[0] : actorEmail);
         

@@ -1,12 +1,30 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 
-export function ParticipantList({ participants }) {
+export function ParticipantList({ participants, organizerEmail }) {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const filtered = participants.filter(p => 
+  // Xếp hạng ưu tiên: 1 (Organizer), 2 (Internal), 3 (External)
+  const orgDomain = organizerEmail ? organizerEmail.split('@')[1] : 'rongcon.net';
+
+  const getPriority = (email) => {
+    if (!email) return 3;
+    if (organizerEmail && email === organizerEmail) return 1;
+    if (email.endsWith(`@${orgDomain}`)) return 2;
+    return 3;
+  };
+
+  const sortedParticipants = [...participants].sort((a, b) => {
+    const pA = getPriority(a.email);
+    const pB = getPriority(b.email);
+    if (pA !== pB) return pA - pB;
+    // Cùng hạng thì sắp xếp theo tên
+    return a.name.localeCompare(b.name);
+  });
+
+  const filtered = sortedParticipants.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
     p.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -36,14 +54,28 @@ export function ParticipantList({ participants }) {
       />
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {paginated.map(p => (
+        {paginated.map(p => {
+          const priority = getPriority(p.email);
+          return (
           <div key={p.id} className="participant-item">
             <div className="participant-info">
               <div className="avatar">
                 {p.name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontWeight: '500' }}>{p.name}</div>
+                <div style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {p.name}
+                  {priority === 1 && (
+                    <span style={{ fontSize: '10px', background: 'var(--accent-secondary)', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>
+                      Host
+                    </span>
+                  )}
+                  {priority === 3 && p.email !== 'Khách (Ẩn danh)' && (
+                    <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '4px' }}>
+                      Khách ngoài
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p.email}</div>
               </div>
             </div>
@@ -51,7 +83,7 @@ export function ParticipantList({ participants }) {
               {format(new Date(p.joinTime), 'HH:mm')}
             </div>
           </div>
-        ))}
+        )})}
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
             Không tìm thấy ai.
